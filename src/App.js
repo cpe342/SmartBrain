@@ -5,15 +5,27 @@ import Logo from './Components/Logo/Logo';
 import ImageLinkForm from './Components/ImageLinkForm/ImageLinkForm';
 import Rank from './Components/Rank/Rank';
 import Particles from 'react-particles-js';
-import Clarifai from 'clarifai';
 import FaceRecognition from './Components/FaceRecognition/FaceRecognition';
 import SignIn from './Components/SignIn/SignIn';
 import Register from './Components/Register/Register';
 
 
-const app = new Clarifai.App({
- apiKey: '2d1f800db24343198ac44fccfacf6344'
-});
+
+
+const initialState = {
+      input:'',
+      imageURL:'',
+      box:{},
+      route:'SignIn',
+      isSignedIn:false,
+      user:{
+        id:'',
+        name:'',
+        email:'',
+        entries:0,
+        joined: '',
+      }
+    }
 
 class App extends Component {
 
@@ -48,7 +60,6 @@ class App extends Component {
 
   calculateFaceLocation=(data) => {
     const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
-    console.log(clarifaiFace);
     const image = document.getElementById('inputimage');
     const width = Number(image.width);
     const height= Number(image.height);
@@ -62,7 +73,7 @@ class App extends Component {
   }
 
   displayFaceBox=(box) =>{
-    console.log(box);
+    
     this.setState({box:box});
   }
 
@@ -73,8 +84,16 @@ class App extends Component {
   onButtonSubmit=() =>{
     //console.log('click');
     this.setState({imageURL:this.state.input})
+    fetch('http://localhost:3000/imageurl',{
+          method:'post',
+          headers:{'Content-Type': 'application/json'},
+          body:JSON.stringify({
+           input:this.state.input
+          })
+        })
+        .then(response=>response.json())
     //console.log(this.state.input)
-    app.models.predict("a403429f2ddf4b49b307e318f00e528b", this.state.input)
+    // app.models.predict("a403429f2ddf4b49b307e318f00e528b", this.state.input)
     .then(response=> {
       if(response){
         fetch('http://localhost:3000/image',{
@@ -88,6 +107,7 @@ class App extends Component {
         .then(count=>{
           this.setState(Object.assign(this.state.user,{entries:count}))
         })
+        .catch(console.log)
       }
       this.displayFaceBox(this.calculateFaceLocation(response))})
 
@@ -96,7 +116,7 @@ class App extends Component {
 
   onRouteChange= (route) => {
     if(route==='SignOut'){
-      this.setState({isSignedIn:false})
+      this.setState(initialState)
     }
     else if(route === 'home')
     {
